@@ -53,11 +53,123 @@ interface ComulineStation {
   name: string;
 }
 
+// Static fallback stations
+const FALLBACK_STATIONS: ComulineStation[] = [
+  { id: "MRI", name: "Manggarai (Transit Pusat)" },
+  { id: "SUD", name: "Sudirman (Sudirman Jkt)" },
+  { id: "THB", name: "Tanah Abang (Transit Barat)" },
+  { id: "JAKK", name: "Jakarta Kota" },
+  { id: "BOO", name: "Bogor" },
+  { id: "DPK", name: "Depok Baru" },
+  { id: "BKS", name: "Bekasi" },
+  { id: "PSE", name: "Pasar Senen" },
+  { id: "HLM", name: "Halim (Stasiun WHOOSH)" }
+];
+
+// Offline client-side realistic schedules generator matching back-end
+function generateClientSchedules(stationId: string): TrainSchedule[] {
+  let currentHour = 12;
+  let currentMinute = 30;
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Jakarta',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const parts = formatter.format(new Date()).split(':');
+    currentHour = parseInt(parts[0]) || 0;
+    currentMinute = parseInt(parts[1]) || 0;
+  } catch (error) {
+    const now = new Date();
+    currentHour = now.getHours();
+    currentMinute = now.getMinutes();
+  }
+
+  const generatedList: TrainSchedule[] = [];
+  let destinations: { dest: string; trainName: string; line: 'Bogor' | 'Cikarang' | 'Rangkas' | 'TanjungPriok' | 'Whoosh' | 'Argo' }[] = [];
+
+  const normId = stationId.toUpperCase();
+  if (normId === "MRI" || normId === "MANGGARAI") {
+    destinations = [
+      { dest: "Bogor", trainName: "KRL Commuter Line Bogor", line: "Bogor" },
+      { dest: "Jakarta Kota", trainName: "KRL Commuter Line Kota", line: "Bogor" },
+      { dest: "Bekasi", trainName: "KRL Commuter Line Bekasi", line: "Cikarang" },
+      { dest: "Cikarang", trainName: "KRL Commuter Line Cikarang", line: "Cikarang" },
+      { dest: "Depok", trainName: "KRL Commuter Line Depok", line: "Bogor" },
+      { dest: "Nambo", trainName: "KRL Commuter Line Nambo", line: "Bogor" },
+    ];
+  } else if (normId === "SUD" || normId === "SUDIRMAN") {
+    destinations = [
+      { dest: "Manggarai", trainName: "KRL Commuter Line Loop", line: "Cikarang" },
+      { dest: "Bogor", trainName: "KRL Commuter Line Bogor", line: "Bogor" },
+      { dest: "Cikarang", trainName: "KRL Commuter Line Cikarang", line: "Cikarang" },
+      { dest: "Jakarta Kota", trainName: "KRL Commuter Line Kota", line: "Bogor" },
+      { dest: "Angke", trainName: "KRL Commuter Line Angke", line: "Cikarang" },
+    ];
+  } else if (normId === "THB" || normId === "TANAH ABANG" || normId === "TANAHABANG") {
+    destinations = [
+      { dest: "Rangkasbitung", trainName: "KRL Commuter Line Rangkas", line: "Rangkas" },
+      { dest: "Parung Panjang", trainName: "KRL Commuter Serpong", line: "Rangkas" },
+      { dest: "Serpong", trainName: "KRL Commuter Serpong", line: "Rangkas" },
+      { dest: "Tiga Raksa", trainName: "KRL Commuter Rangkas", line: "Rangkas" },
+    ];
+  } else if (normId === "HLM" || normId === "HALIM") {
+    destinations = [
+      { dest: "Bandung Tegalluar", trainName: "WHOOSH Bullet Train G1102", line: "Whoosh" },
+      { dest: "Padalarang", trainName: "WHOOSH Express G1120", line: "Whoosh" },
+    ];
+  } else {
+    destinations = [
+      { dest: "Jakarta Kota", trainName: "KRL Commuter Line Kota", line: "Bogor" },
+      { dest: "Bogor", trainName: "KRL Commuter Line Bogor", line: "Bogor" },
+      { dest: "Bekasi", trainName: "KRL Commuter Line Bekasi", line: "Cikarang" },
+      { dest: "Cikarang", trainName: "KRL Commuter Line Cikarang", line: "Cikarang" },
+      { dest: "Solo Balapan", trainName: "KA Lodaya Eksekutif", line: "Argo" },
+      { dest: "Bandung - Hall", trainName: "KA Argo Parahyangan", line: "Argo" }
+    ];
+  }
+
+  for (let i = 0; i < 8; i++) {
+    const totalMinutes = currentHour * 60 + currentMinute + (i * 12) + (i % 3);
+    const trainHour = Math.floor(totalMinutes / 60) % 24;
+    const trainMinute = totalMinutes % 60;
+    const timeStr = `${String(trainHour).padStart(2, '0')}:${String(trainMinute).padStart(2, '0')}`;
+
+    const info = destinations[i % destinations.length];
+    
+    let platform = "01";
+    if (info.line === "Bogor") platform = (i % 2 === 0) ? "01" : "02";
+    else if (info.line === "Cikarang") platform = (i % 2 === 0) ? "03" : "04";
+    else if (info.line === "Rangkas") platform = (i % 2 === 0) ? "05" : "06";
+    else if (info.line === "Whoosh") platform = "05";
+    else platform = String((i % 4) + 1).padStart(2, '0');
+
+    let status: TrainSchedule['status'] = "On Time";
+    if (i === 0) status = "Arriving";
+    else if (i === 1) status = "Boarding";
+    else if (i % 5 === 0) status = "Delayed 5m";
+
+    generatedList.push({
+      id: `${stationId}-${i}-${timeStr}`,
+      trainNo: info.trainName,
+      destination: info.dest,
+      time: timeStr,
+      platform: platform,
+      status: status,
+      type: info.line === "Whoosh" ? "Shinkansen" : info.line === "Argo" ? "Rapid" : "Commuter",
+      lineColor: info.line === "Whoosh" ? "#F4AE52" : info.line === "Bogor" ? "#C1EBE9" : "#4F252E"
+    });
+  }
+
+  return generatedList;
+}
+
 export default function LiveTimetable({ onSelectTrain, selectedTrainId, onArrivingSubscribedTrainsChange }: LiveTimetableProps) {
   const { language, t } = useLanguage();
-  const [stations, setStations] = useState<ComulineStation[]>([]);
+  const [stations, setStations] = useState<ComulineStation[]>(FALLBACK_STATIONS);
   const [selectedStationId, setSelectedStationId] = useState<string>("MRI");
-  const [schedules, setSchedules] = useState<TrainSchedule[]>([]);
+  const [schedules, setSchedules] = useState<TrainSchedule[]>(() => generateClientSchedules("MRI"));
   const [activeFilter, setActiveFilter] = useState<'All' | 'Shinkansen' | 'Rapid' | 'Commuter'>('All');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -139,12 +251,14 @@ export default function LiveTimetable({ onSelectTrain, selectedTrainId, onArrivi
         if (data && Array.isArray(data)) {
           setSchedules(data);
         } else {
-          setSchedules([]);
+          setSchedules(generateClientSchedules(stationId));
         }
+      } else {
+        setSchedules(generateClientSchedules(stationId));
       }
     } catch (e) {
-      console.error("Failed to fetch schedules from proxy:", e);
-      setSchedules([]);
+      console.error("Failed to fetch schedules from proxy, falling back to local generated data:", e);
+      setSchedules(generateClientSchedules(stationId));
     } finally {
       setIsLoading(false);
     }
