@@ -107,11 +107,11 @@ html, body {
 }
 
 .autoscroll-timelines-y {
-  animation: scrollTimelineUp 20s linear infinite;
+  /* Animation disabled as requested */
 }
 
 .autoscroll-banner-x {
-  animation: scrollTimelineLeft 15s linear infinite;
+  /* Animation disabled as requested */
 }
 
 /* Floating transit indicator */
