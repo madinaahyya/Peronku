@@ -423,6 +423,9 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
   const [krlSearchQuery, setKrlSearchQuery] = useState<string>('');
   const [selectedKrlStation, setSelectedKrlStation] = useState<KRLStation | null>(null);
 
+  // Expanded directory state for mobile devices - false by default so map opens immediately in full screen
+  const [showSidebar, setShowSidebar] = useState<boolean>(false);
+
   // Soft vibration toggle (disabled by default to prevent buggy iframe/browser-specific buzzes)
   const [vibrationEnabled, setVibrationEnabled] = useState<boolean>(false);
 
@@ -562,12 +565,12 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
   const floorLocations = LOCATIONS.filter(loc => loc.floor === activeFloor);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/80 backdrop-blur-md transition-opacity duration-300">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#4F252E] transition-opacity duration-300">
       
       {/* Main Stark, Editorial Styled Block frame */}
       <div 
         id="station-map-container"
-        className="relative w-full max-w-7xl h-[92vh] md:h-[90vh] bg-[#4F252E] border-4 border-black shadow-[8px_8px_0px_0px_#000000] flex flex-col overflow-hidden text-[#FFF7C5]"
+        className="relative w-full h-full bg-[#4F252E] flex flex-col overflow-hidden text-[#FFF7C5]"
       >
         {/* Editorial Top bar of Kiosk Dialog */}
         <div className="flex items-center justify-between border-b-4 border-black bg-[#FFF7C5] p-3 text-[#4F252E]">
@@ -659,7 +662,7 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           
           {/* LEFT PANEL: Directory Search and Highlighting lists */}
-          <div className="w-full md:w-[320px] bg-[#3E1A22] border-b-4 md:border-b-0 md:border-r-4 border-black flex flex-col overflow-hidden shrink-0">
+          <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex w-full md:w-[320px] bg-[#3E1A22] border-b-4 md:border-b-0 md:border-r-4 border-black flex-col overflow-hidden shrink-0 h-[45vh] md:h-auto`}>
             {/* Legend title header */}
             <div className="p-3 border-b-2 border-black bg-[#4a2029] flex justify-between items-center text-xs font-mono font-black uppercase">
               <span className="flex items-center gap-1.5">
@@ -701,8 +704,8 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
                           {loc.floor}
                         </span>
                         <div className="overflow-hidden">
-                          <p className="font-mono font-black text-[11px] leading-tight truncate">{loc.name}</p>
-                          <p className={`font-sans text-[10px] leading-tight mt-0.5 ${isCurrent ? 'text-black/80' : 'text-[#FFF7C5]/60'} line-clamp-1`}>
+                           <p className="font-mono font-black text-[11px] leading-tight truncate">{loc.name}</p>
+                           <p className={`font-sans text-[10px] leading-tight mt-0.5 ${isCurrent ? 'text-black/80' : 'text-[#FFF7C5]/60'} line-clamp-1`}>
                             {loc.description}
                           </p>
                         </div>
@@ -734,8 +737,8 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
                           {loc.floor}
                         </span>
                         <div className="overflow-hidden">
-                          <p className="font-mono font-black text-[11px] leading-tight truncate">{loc.name}</p>
-                          <p className={`font-sans text-[10px] leading-tight mt-0.5 ${isCurrent ? 'text-black/80' : 'text-[#FFF7C5]/60'} line-clamp-1`}>
+                           <p className="font-mono font-black text-[11px] leading-tight truncate">{loc.name}</p>
+                           <p className={`font-sans text-[10px] leading-tight mt-0.5 ${isCurrent ? 'text-black/80' : 'text-[#FFF7C5]/60'} line-clamp-1`}>
                             {loc.description}
                           </p>
                         </div>
@@ -767,8 +770,8 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
                           {loc.floor}
                         </span>
                         <div className="overflow-hidden">
-                          <p className="font-mono font-black text-[11px] leading-tight truncate">{loc.name}</p>
-                          <p className={`font-sans text-[10px] leading-tight mt-0.5 ${isCurrent ? 'text-black/80' : 'text-[#FFF7C5]/60'} line-clamp-1`}>
+                           <p className="font-mono font-black text-[11px] leading-tight truncate">{loc.name}</p>
+                           <p className={`font-sans text-[10px] leading-tight mt-0.5 ${isCurrent ? 'text-black/80' : 'text-[#FFF7C5]/60'} line-clamp-1`}>
                             {loc.description}
                           </p>
                         </div>
@@ -792,27 +795,37 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
             {/* FLOOR SELECTOR LEVEL TABS & CONTROL ACTIONS */}
             <div className="border-b-2 border-black bg-[#3E1A22] p-2 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 relative z-10">
               {/* Tabs */}
-              <div className="flex bg-black/30 border border-black rounded-none p-1 shrink-0">
-                {(['L1', 'L2', 'L3'] as FloorLevel[]).map((fl) => {
-                  const isActive = activeFloor === fl;
-                  let label = 'L1: Lobby & Peron Utama';
-                  if (fl === 'L2') label = 'L2: Mezzanine Kuliner';
-                  if (fl === 'L3') label = 'L3: Boarding WHOOSH';
-                  
-                  return (
-                    <button
-                      key={fl}
-                      onClick={() => handleFloorChange(fl)}
-                      className={`font-mono text-[10px] sm:text-xs font-black uppercase px-3 py-1.5 transition-all text-center flex-1 cursor-pointer ${
-                        isActive 
-                          ? 'bg-[#F4AE52] text-black shadow-[1px_1px_0px_#000000] border border-black font-black' 
-                          : 'text-[#FFF7C5]/60 hover:text-[#FFF7C5] hover:bg-white/5'
-                      }`}
-                    >
-                      {fl}
-                    </button>
-                  );
-                })}
+              <div className="flex bg-black/30 border border-black rounded-none p-1 shrink-0 items-center justify-between gap-1.5 flex-1 sm:flex-initial">
+                <div className="flex gap-1 flex-1">
+                  {(['L1', 'L2', 'L3'] as FloorLevel[]).map((fl) => {
+                    const isActive = activeFloor === fl;
+                    return (
+                      <button
+                        key={fl}
+                        onClick={() => handleFloorChange(fl)}
+                        className={`font-mono text-[10px] sm:text-xs font-black uppercase px-3 py-1.5 transition-all text-center flex-1 cursor-pointer ${
+                          isActive 
+                            ? 'bg-[#F4AE52] text-black shadow-[1px_1px_0px_#000000] border border-black font-black' 
+                            : 'text-[#FFF7C5]/60 hover:text-[#FFF7C5] hover:bg-white/5'
+                        }`}
+                      >
+                        {fl}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Mobile Sidebar Directory Toggle Button */}
+                <button
+                  onClick={() => {
+                    localVibrate(15);
+                    playClickSound();
+                    setShowSidebar(!showSidebar);
+                  }}
+                  className="md:hidden font-mono text-[9px] font-black uppercase px-2.5 py-1.5 border border-black bg-[#FFF7C5] text-[#4F252E] shadow-[1px_1px_0px_#000] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none shrink-0 cursor-pointer"
+                >
+                  {showSidebar ? '🗺️ PETA' : '🔍 LIST'}
+                </button>
               </div>
 
               {/* Map Zoom Controls */}
@@ -1411,7 +1424,7 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden animate-fade">
             
             {/* LEFT PANEL: KRL Station list & search */}
-            <div className="w-full md:w-[320px] bg-[#3E1A22] border-b-4 md:border-b-0 md:border-r-4 border-black flex flex-col overflow-hidden shrink-0">
+            <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex w-full md:w-[320px] bg-[#3E1A22] border-b-4 md:border-b-0 md:border-r-4 border-black flex-col overflow-hidden shrink-0 h-[45vh] md:h-auto`}>
               
               {/* Header search */}
               <div className="p-3 border-b-2 border-black bg-[#4a2029]">
@@ -1539,7 +1552,19 @@ export default function StationMapModal({ isOpen, onClose }: StationMapModalProp
               <div className="border-b-2 border-black bg-[#3E1A22] p-2 flex justify-between items-center gap-2 relative z-10 w-full shrink-0">
                 <div className="flex items-center space-x-2">
                   <Map className="w-4 h-4 text-[#F4AE52]" />
-                  <span className="font-mono text-[10px] sm:text-xs font-black uppercase text-[#FFF7C5]/85">Interactive Transit Diagram</span>
+                  <span className="font-mono text-[10px] sm:text-xs font-black uppercase text-[#FFF7C5]/85 hidden xs:inline">Interactive Transit Diagram</span>
+                  
+                  {/* Mobile Sidebar Toggle Button */}
+                  <button
+                    onClick={() => {
+                      localVibrate(15);
+                      playClickSound();
+                      setShowSidebar(!showSidebar);
+                    }}
+                    className="md:hidden font-mono text-[9px] font-black uppercase px-2 py-1.5 border border-black bg-[#FFF7C5] text-[#4F252E] shadow-[1px_1px_0px_#000] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none shrink-0 cursor-pointer"
+                  >
+                    {showSidebar ? '🗺️ PETA' : '🔍 LIST'}
+                  </button>
                 </div>
 
                 {/* Map Zoom Controls */}
