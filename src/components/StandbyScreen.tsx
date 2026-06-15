@@ -35,7 +35,7 @@ const SAMPLE_SCHEDULES: TrainSchedule[] = [
 export default function StandbyScreen({ onTap }: StandbyScreenProps) {
   const { language, t } = useLanguage();
   const [systemTime, setSystemTime] = useState(new Date());
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -47,18 +47,55 @@ export default function StandbyScreen({ onTap }: StandbyScreenProps) {
     return () => clearInterval(timer);
   }, []);
 
-  // Soft Auto-Scrolling core logic disabled as requested
+  // Soft Auto-Scrolling core logic
   useEffect(() => {
-    // No-op to prevent autoscroll
-  }, []);
+    if (!isAutoScrolling) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const scrollSpeed = 0.55; // Pixels per frame - beautifully fluid progress
+    let animationId: number;
+
+    const performScroll = () => {
+      if (!container) return;
+      container.scrollTop += scrollSpeed;
+
+      const halfHeight = container.scrollHeight / 2;
+      if (halfHeight > 0) {
+        if (container.scrollTop >= halfHeight) {
+          // Soft seamless loop reset back into matched equivalent of group 1
+          container.scrollTop = container.scrollTop - halfHeight;
+        }
+      }
+      animationId = requestAnimationFrame(performScroll);
+    };
+
+    animationId = requestAnimationFrame(performScroll);
+    return () => cancelAnimationFrame(animationId);
+  }, [isAutoScrolling]);
 
   // Pause scrolling on manual interaction or wheel events, then resume
   const handleManualInteraction = () => {
-    // No-op
+    setIsAutoScrolling(false);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsAutoScrolling(true);
+    }, 5000); // Wait 5 seconds after manual actions before resuming auto-scroll
   };
 
   const handleScroll = () => {
-    // No-op
+    const container = containerRef.current;
+    if (!container) return;
+
+    const halfHeight = container.scrollHeight / 2;
+    if (halfHeight <= 0) return;
+
+    // Endless scroll boundaries mapping
+    if (container.scrollTop >= halfHeight) {
+      container.scrollTop = container.scrollTop - halfHeight;
+    } else if (container.scrollTop <= 2) {
+      container.scrollTop = halfHeight + container.scrollTop;
+    }
   };
 
   const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -586,6 +623,7 @@ export default function StandbyScreen({ onTap }: StandbyScreenProps) {
         className="flex-1 w-full overflow-y-auto no-scrollbar scroll-smooth relative z-10"
       >
         {renderSections("group1")}
+        {renderSections("group2")}
       </div>
 
       {/* ====================================================
