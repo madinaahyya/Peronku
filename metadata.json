@@ -1,0 +1,6 @@
+{
+  "name": "Peronku",
+  "description": "High-contrast, trendy dark train kiosk dashboard with a Tech-Noir and Neo-Brutalism hybrid aesthetic, featuring chunky typography, thick borders, playful floating elements, and smart transit capabilities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
