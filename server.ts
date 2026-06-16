@@ -513,6 +513,10 @@ async function setupVite() {
   });
 }
 
-setupVite().catch((error) => {
-  console.error("Failed to boot full-stack app server:", error);
-});
+if (!process.env.VERCEL) {
+  setupVite().catch((error) => {
+    console.error("Failed to boot full-stack app server:", error);
+  });
+}
+
+export default app;
